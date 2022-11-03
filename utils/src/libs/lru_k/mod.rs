@@ -150,13 +150,16 @@ where K: Hash + Eq + Clone
         self.get_cache(key)
     }
     fn hit_history(&mut self, key: &K) {
-        if let Some((_, hit_count)) = self.history_cache.get_mut(key) {
+        if let Some((n, hit_count)) = self.history_cache.get_mut(key) {
             *hit_count += 1;
             if *hit_count == self.k {
                 self.history_cache.remove(key).map(|(node,_)| {
                     self.history_linked_list.unlink_node(node);
                     self.put_cache(node);
                 });
+            } else {
+                self.history_linked_list.unlink_node(*n);
+                self.history_linked_list.push_front_node(*n);
             }
         }
     }
