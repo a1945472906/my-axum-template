@@ -190,14 +190,10 @@ where K: Hash + Eq + Clone
     }
     fn put_cache(&mut self, node: NonNull<Node<(K,V)>>){
         unsafe {
-            match self.cache.remove(&node.as_ref().elem.0) {
-                Some(n) => {
-                    self.cache_linked_list.unlink_node(n);
-                },
-                None => {
-                    self.cache.insert(node.as_ref().elem.0.clone(), node);
-                }
+            if let Some(n) = self.cache.remove(&node.as_ref().elem.0) {
+                self.cache_linked_list.unlink_node(n);
             }
+            self.cache.insert(node.as_ref().elem.0.clone(), node);
             self.cache_linked_list.push_front_node(node);
             if self.cache_linked_list.len > self.cap {
                 if let Some(delete_node) = self.cache_linked_list.pop_back_node(){
