@@ -43,6 +43,9 @@ impl<T> Global<T> {
         T: Clone,
     {
         self.value = value;
+        unsafe {
+            self.notify()
+        }
     }
     pub fn get_value(&self) -> &T {
         &self.value
