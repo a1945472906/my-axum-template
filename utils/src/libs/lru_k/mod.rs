@@ -126,7 +126,8 @@ pub struct LRUKCache<K,V> {
     cache_linked_list: LinkedList<(K,V)>,
     history_cap: usize, 
     history_cache: HashMap<K,(NonNull<Node<(K,V)>>,usize)>,
-    history_linked_list: LinkedList<(K,V)>
+    history_linked_list: LinkedList<(K,V)>,
+    marker: PhantomData<Box<Node<(K,V)>>>
 }
 
 impl <K,V> LRUKCache<K, V> 
@@ -140,7 +141,9 @@ where K: Hash + Eq + Clone
             cache_linked_list: LinkedList::new(), 
             history_cap, 
             history_cache: HashMap::new(), 
-            history_linked_list: LinkedList::new() }
+            history_linked_list: LinkedList::new(),
+            marker: PhantomData
+         }
     }
     pub fn put(&mut self, key: K, value: V) {
         self.put_history(key, value);
