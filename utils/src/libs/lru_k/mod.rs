@@ -184,7 +184,7 @@ where K: Hash + Eq + Clone
         } else {
             let node = Node::new((key.clone(),value));
             let node = Box::leak(Box::new(node)).into();
-            self.history_cache.insert(key.clone(), (node, 1));
+            self.history_cache.insert(key.clone(), (node, 0));
             self.history_linked_list.push_front_node(node);
             if self.history_linked_list.len > self.history_cap {
                 if let Some(delete_node) = self.history_linked_list.pop_back_node()
