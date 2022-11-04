@@ -25,10 +25,11 @@ impl<T> CancerCell<T> {
     }
 }
 
-#[derive(Clone)]
+// #[derive(Clone, Copy)]
 pub struct Ptr<T>(*mut T);
 unsafe impl<T> Sync for Ptr<T> {}
 unsafe impl<T> Send for Ptr<T> {}
+// unsafe impl<T> Copy for Ptr<T> {}
 impl<T> Deref for Ptr<T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
@@ -40,3 +41,12 @@ impl<T> DerefMut for Ptr<T> {
         unsafe { &mut *self.0 }
     }
 }
+impl <T> Copy for Ptr<T> {}
+
+impl <T> Clone for Ptr<T> {
+    #[inline]
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+

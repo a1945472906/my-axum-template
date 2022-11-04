@@ -3,7 +3,7 @@
 mod apps;
 use apps::app::{user::model::model::UserInfo, self};
 use axum::{extract::Extension, http::StatusCode, middleware, routing::get_service, Router};
-use std::{collections::HashMap, net::SocketAddr};
+use std::{collections::HashMap, net::SocketAddr, ptr::NonNull};
 use futures;
 use tokio::time::Duration;
 use utils::libs::{
@@ -16,7 +16,8 @@ use utils::libs::{
         mail::EmailServer, 
         model::email_mark::*,
     },
-    db::{database::DB,model::db_mark::*}
+    db::{database::DB,model::db_mark::*}, 
+    lru_k::LRUKCache
 };
 
 pub type RefreshTokenCache = Cache<String, Token<UserInfo>>;
@@ -45,21 +46,18 @@ async fn main() {
     .await;
     let c = CancerCell::new(HashMap::new());
     let cache: RefreshTokenCache = Cache(c.get_mut_raw());
+    let lru_cache:CancerCell<LRUKCache<String,u8>> = CancerCell::new(LRUKCache::new(2, 2048, 2048));
     let mut cache_clone = cache.clone();
     tokio::spawn(async move {
         let interval = tokio::time::interval(Duration::from_secs(CLEAN_TASK_TICK));
         cache_clone.clean_task(interval).await;
     });
-    // let mut emali_server = EmailServer::<Office365>::new();
-
-    // let email_server_sender = emali_server.get_sender();
-    // tokio::spawn(async move {
-    //     emali_server.run().await;
-    // });
     let app = Router::new()
         .merge(apps::app::as_route())
         .layer(Extension(db))
-        .layer(Extension(cache));
+        .layer(Extension(cache))
+        .layer(Extension(lru_cache.get_ptr()));
+
         // .layer(Extension(email_server_sender));
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
     let serve = axum::Server::bind(&addr).serve(app.into_make_service());

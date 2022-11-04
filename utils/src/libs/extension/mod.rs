@@ -1,6 +1,5 @@
 use axum::async_trait;
 use tokio::time::Interval;
-
 use std::{
     collections::HashMap,
     ops::{Deref, DerefMut},

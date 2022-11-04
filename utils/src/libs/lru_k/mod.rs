@@ -119,7 +119,9 @@ impl<T> Drop for LinkedList<T> {
     }
 }
 
-pub struct LRUKCache<K,V> {
+// #[derive(Clone)]
+pub struct LRUKCache<K,V>
+{
     k: usize, 
     cap: usize,
     cache: HashMap<K,NonNull<Node<(K,V)>>>,
