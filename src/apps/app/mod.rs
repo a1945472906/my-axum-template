@@ -1,10 +1,10 @@
 pub mod system;
-pub mod user;
 pub mod test_utils;
+pub mod user;
 use axum::{routing::Route, Router};
 use system::view::SystemView;
-use user::view::UserView;
 use test_utils::view::TestUtilView;
+use user::view::UserView;
 
 use super::View;
 
@@ -14,10 +14,13 @@ use super::View;
 //         Router::new().route(SystemView::)
 //     }
 // }
-// pub struct DefaultApp; 
+// pub struct DefaultApp;
 
 // impl App for DefaultApp {
 pub fn as_route() -> Router {
-    Router::new().merge(SystemView::as_route()).merge(UserView::as_route()).merge(TestUtilView::as_route())
+    Router::new()
+        .merge(SystemView::as_route())
+        .merge(UserView::as_route())
+        .merge(TestUtilView::as_route())
 }
 // }/

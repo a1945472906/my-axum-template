@@ -41,12 +41,11 @@ impl<T> DerefMut for Ptr<T> {
         unsafe { &mut *self.0 }
     }
 }
-impl <T> Copy for Ptr<T> {}
+impl<T> Copy for Ptr<T> {}
 
-impl <T> Clone for Ptr<T> {
+impl<T> Clone for Ptr<T> {
     #[inline]
     fn clone(&self) -> Self {
         *self
     }
 }
-

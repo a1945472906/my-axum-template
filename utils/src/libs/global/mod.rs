@@ -9,30 +9,26 @@ use std::ops::{Deref, DerefMut};
 
 pub trait Observable {
     type Target;
-    fn get_observers(&mut self) -> &mut Vec<Box<dyn FnMut(&Self::Target) -> ()>>;
-    fn watch(&mut self, f: impl FnMut(&Self::Target) -> () + 'static) {
+    fn get_observers(&mut self) -> &mut Vec<Box<dyn FnMut(&Self::Target, &Self::Target) -> ()>>;
+    fn watch(&mut self, f: impl FnMut(&Self::Target, &Self::Target) -> () + 'static) {
         self.get_observers().push(Box::new(f));
     }
-    fn notify(&mut self, new_value: &Self::Target) {
+    fn notify(&mut self, old_value: &Self::Target, new_value: &Self::Target) {
         self.get_observers().iter_mut().for_each(|f| {
-            f(new_value);
+            f(old_value, new_value);
         })
     }
 }
 
 pub struct Global<T> {
+    old_value: Option<T>,
     value: T,
-    observers: Vec<Box<dyn FnMut(&T) -> ()>>,
-}
-impl<T> Observable for Global<T> {
-    type Target = T;
-    fn get_observers(&mut self) -> &mut Vec<Box<dyn FnMut(&Self::Target) -> ()>> {
-        &mut self.observers
-    }
+    observers: Vec<Box<dyn FnMut(&T, &T) -> ()>>,
 }
 impl<T> Global<T> {
     pub fn new(value: T) -> Self {
         Self {
+            old_value: None,
             value,
             observers: vec![],
         }
@@ -42,17 +38,23 @@ impl<T> Global<T> {
     where
         T: Clone,
     {
+        self.old_value = Some(self.value.clone());
         self.value = value;
-        unsafe {
-            self.notify()
-        }
+        unsafe { self.notify() }
     }
     pub fn get_value(&self) -> &T {
         &self.value
     }
     pub unsafe fn notify(&mut self) {
-        let ptr = &self.value as *const T;
-        Observable::notify(self, &*ptr);
+        let old_value = self.old_value.as_ref().unwrap() as *const T;
+        let new_value = &self.value as *const T;
+        Observable::notify(self, &*old_value, &*new_value);
+    }
+}
+impl<T> Observable for Global<T> {
+    type Target = T;
+    fn get_observers(&mut self) -> &mut Vec<Box<dyn FnMut(&Self::Target, &Self::Target) -> ()>> {
+        &mut self.observers
     }
 }
 impl<T> Deref for Global<T> {

@@ -8,8 +8,8 @@ use utils::libs::{
 const EXPIRE: u64 = 3600 * 24 * 30;
 const REFRESH_EXPIRE: u64 = 24 * 3600;
 const LOGIN_KEY_EXP: u64 = 24 * 3600;
-use serde_json::{json, Value};
 use crate::RefreshTokenCache;
+use serde_json::{json, Value};
 // pub type RefreshTokenCache = Cache<String, Token<UserInfo>>;
 
 pub fn generate_login_key(username: String) -> Result<String, ()> {

@@ -1,8 +1,10 @@
 // use axum::Extension;
-use axum::{response::IntoResponse, routing::*, Json, Extension,extract::{
-    Query,
-    Path
-} };
+use axum::{
+    extract::{Path, Query},
+    response::IntoResponse,
+    routing::*,
+    Extension, Json,
+};
 use utils::libs::{
     db::{database::DB, model::db_mark::User},
     jwt::Token,
@@ -23,7 +25,7 @@ impl UserView {
     ) -> impl IntoResponse {
         Response::from(login(req, db, cache).await)
     }
-    
+
     async fn key_login(
         Query(req): Query<KeyLogin>,
         Extension(db): Extension<DB<User>>,
@@ -38,14 +40,14 @@ impl UserView {
             body: Some(user_info),
         }
     }
-    
+
     async fn refresh_token(
         Json(req): Json<RefreshToken>,
         Extension(cache): Extension<RefreshTokenCache>,
     ) -> impl IntoResponse {
         Response::from(refresh_token(req, cache).await)
     }
-    
+
     async fn add_role(
         user_info: Token<UserInfo>,
         Json(req): Json<AddRole>,
