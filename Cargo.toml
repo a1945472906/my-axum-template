@@ -26,7 +26,18 @@ chrono = "0.4"
 bytes = "1.2.1"
 mime = "0.3.16"
 multer = "2.0.3"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = [
+  "env-filter",
+  "fmt",
+  "json",
+] }
+opentelemetry = { version = "0.18", features = ["rt-tokio"] }
+tracing-opentelemetry = "0.18"
+axum-tracing-opentelemetry = { version="0.5.2", features=["otlp"] }
 macro_derive = { path = "./macro_derive"}
+tower-http = { version = "0.3.0", features = ["trace"] }
+tower = "0.4"
 [workspace]
 members = [
     "utils",

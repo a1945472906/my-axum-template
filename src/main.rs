@@ -1,10 +1,10 @@
 #![feature(drain_filter)]
 #[allow(unused)]
 mod apps;
-use apps::app::{self, user::model::model::UserInfo};
-use axum::{extract::Extension, http::StatusCode, middleware, routing::get_service, Router};
+use apps::app::user::model::model::UserInfo;
+use axum::{extract::Extension, Router};
 use futures;
-use std::{collections::HashMap, net::SocketAddr, ptr::NonNull};
+use std::{collections::HashMap, net::SocketAddr};
 use tokio::time::Duration;
 use utils::libs::{
     db::{database::DB, model::db_mark::*},
@@ -15,9 +15,13 @@ use utils::libs::{
     jwt::Token,
     lru_k::LRUKCache,
     rc::CancerCell,
+    tracing::{default_shutdown_signal, TraceInit},
 };
 
+use tower_http::trace::TraceLayer;
+
 pub type RefreshTokenCache = Cache<String, Token<UserInfo>>;
+
 fn init() {
     let env = global::get_global_env();
     let content_limit = extract::get().get_mut();
@@ -28,8 +32,9 @@ fn init() {
             "small" => 512 * 1024 * 1024,   //  512m
             _ => 0,
         };
-        println!("content_length_limit change: {}", *content_limit);
-    })
+        tracing::info!("content_length_limit change: {}", *content_limit);
+    });
+    TraceInit::default().init();
 }
 
 const CLEAN_TASK_TICK: u64 = 3600 * 24;
@@ -49,12 +54,13 @@ async fn main() {
     });
     let app = Router::new()
         .merge(apps::app::as_route())
+        .layer(TraceLayer::new_for_http())
         .layer(Extension(db))
         .layer(Extension(cache))
         .layer(Extension(lru_cache.get_ptr()));
-
-    // .layer(Extension(email_server_sender));
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
-    let serve = axum::Server::bind(&addr).serve(app.into_make_service());
+    let serve = axum::Server::bind(&addr)
+        .serve(app.into_make_service())
+        .with_graceful_shutdown(default_shutdown_signal());
     let _ = futures::join!(serve);
 }

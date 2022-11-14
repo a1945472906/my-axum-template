@@ -19,4 +19,11 @@ headers = "0.3.7"
 bytes = "1.2.1"
 http = "0.2.8"
 multer = "2.0.3"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = [
+  "env-filter",
+  "fmt",
+  "json",
+] }
+opentelemetry = { version = "0.18", features = ["rt-tokio"] }
 deadpool-redis = { version = "0.10.2", features = ["rt_tokio_1"] }
