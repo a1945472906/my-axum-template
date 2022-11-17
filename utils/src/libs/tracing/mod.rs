@@ -1,5 +1,5 @@
 use std::default::Default;
-use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 pub async fn default_shutdown_signal() {
     let ctrl_c = async {

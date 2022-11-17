@@ -7,6 +7,11 @@ use axum::{
 use utils::libs::{
     lru_k::LRUKCache,
     rc::Ptr,
+    redis::{
+        redis_mark::{Master, Slave},
+        redis_mode::{R, W},
+        RedisPool,
+    },
     response::{Meta, Response},
 };
 
@@ -31,13 +36,27 @@ impl TestUtilView {
     ) -> impl IntoResponse {
         Response::from(control::get_lru2_cache(req, cache).await)
     }
+    async fn get_redis(
+        Query(req): Query<GetRedisReq>,
+        Extension(mut redis_conn): Extension<Ptr<RedisPool<Slave, R>>>,
+    ) -> impl IntoResponse {
+        Response::from(control::redis_get(req, redis_conn).await)
+    }
+    async fn put_redis(
+        Json(req): Json<PutRedisReq>,
+        Extension(mut redis_conn): Extension<Ptr<RedisPool<Master, W>>>,
+    ) -> impl IntoResponse {
+        Response::from(control::redis_put(req, redis_conn).await)
+    }
 }
 impl View for TestUtilView {
     fn as_route() -> Router {
-        let app = Router::new().route(
-            "/lru_2_cache",
-            post(Self::put_lru_2_cache).get(Self::get_lru2_cache),
-        );
+        let app = Router::new()
+            .route(
+                "/lru_2_cache",
+                post(Self::put_lru_2_cache).get(Self::get_lru2_cache),
+            )
+            .route("/redis", post(Self::put_redis).get(Self::get_redis));
         Router::new().nest("/test_utils", app)
     }
 }

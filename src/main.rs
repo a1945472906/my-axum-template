@@ -15,6 +15,11 @@ use utils::libs::{
     jwt::Token,
     lru_k::LRUKCache,
     rc::CancerCell,
+    redis::{
+        redis_mark::{Master, Slave},
+        redis_mode::{R, W},
+        RedisPool,
+    },
     tracing::{default_shutdown_signal, TraceInit},
 };
 
@@ -48,16 +53,25 @@ async fn main() {
     let lru_cache: CancerCell<LRUKCache<String, u8>> =
         CancerCell::new(LRUKCache::new(2, 2048, 2048));
     let mut cache_clone = cache.clone();
+    let redis_master = CancerCell::new(RedisPool::<Master, W>::new(
+        global::get_global_env().get("REDIS_MASTER").unwrap(),
+    ));
+    let redis_slave = CancerCell::new(RedisPool::<Slave, R>::new(
+        global::get_global_env().get("REDIS_SLAVE").unwrap(),
+    ));
     tokio::spawn(async move {
         let interval = tokio::time::interval(Duration::from_secs(CLEAN_TASK_TICK));
         cache_clone.clean_task(interval).await;
     });
+
     let app = Router::new()
         .merge(apps::app::as_route())
         .layer(TraceLayer::new_for_http())
         .layer(Extension(db))
         .layer(Extension(cache))
-        .layer(Extension(lru_cache.get_ptr()));
+        .layer(Extension(lru_cache.get_ptr()))
+        .layer(Extension(redis_master.get_ptr()))
+        .layer(Extension(redis_slave.get_ptr()));
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
     let serve = axum::Server::bind(&addr)
         .serve(app.into_make_service())

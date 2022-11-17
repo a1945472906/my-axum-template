@@ -5,7 +5,7 @@ use lettre::{
     AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
 };
 use std::marker::PhantomData;
-use tokio::sync::broadcast;
+// use tokio::sync::broadcast;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::time::Duration;
 const MAX_RETRY: u8 = 5;
