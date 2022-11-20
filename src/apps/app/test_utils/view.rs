@@ -6,6 +6,7 @@ use axum::{
 };
 use utils::libs::{
     lru_k::LRUKCache,
+    mongo::{mongo_mark, MongoDB},
     rc::Ptr,
     redis::{
         redis_mark::{Master, Slave},
@@ -48,6 +49,18 @@ impl TestUtilView {
     ) -> impl IntoResponse {
         Response::from(control::redis_put(req, redis_conn).await)
     }
+    async fn put_mongodb(
+        Json(req): Json<PutMongoDBReq>,
+        Extension(mongodb_conn): Extension<Ptr<MongoDB<mongo_mark::Master>>>,
+    ) -> impl IntoResponse {
+        Response::from(control::test_mongodb_insert(req, mongodb_conn).await)
+    }
+    async fn find_mongodb(
+        Query(req): Query<FindMongoDBReq>,
+        Extension(mongodb_conn): Extension<Ptr<MongoDB<mongo_mark::Master>>>,
+    ) -> impl IntoResponse {
+        Response::from(control::test_mongodb_find(req, mongodb_conn).await)
+    }
 }
 impl View for TestUtilView {
     fn as_route() -> Router {
@@ -56,7 +69,8 @@ impl View for TestUtilView {
                 "/lru_2_cache",
                 post(Self::put_lru_2_cache).get(Self::get_lru2_cache),
             )
-            .route("/redis", post(Self::put_redis).get(Self::get_redis));
+            .route("/redis", post(Self::put_redis).get(Self::get_redis))
+            .route("/mongodb", post(Self::put_mongodb).get(Self::find_mongodb));
         Router::new().nest("/test_utils", app)
     }
 }

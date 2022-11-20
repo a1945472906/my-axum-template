@@ -14,6 +14,7 @@ use utils::libs::{
     global::{self, Observable},
     jwt::Token,
     lru_k::LRUKCache,
+    mongo::{mongo_mark, MongoDB},
     rc::CancerCell,
     redis::{
         redis_mark::{Master, Slave},
@@ -22,7 +23,7 @@ use utils::libs::{
     },
     tracing::{default_shutdown_signal, TraceInit},
 };
-
+// use std::collections::HashMap;
 use tower_http::trace::TraceLayer;
 
 pub type RefreshTokenCache = Cache<String, Token<UserInfo>>;
@@ -59,6 +60,13 @@ async fn main() {
     let redis_slave = CancerCell::new(RedisPool::<Slave, R>::new(
         global::get_global_env().get("REDIS_SLAVE").unwrap(),
     ));
+    let mongo_client = MongoDB::<mongo_mark::Master>::new(
+        global::get_global_env().get("MONGODB_EXAMPLE").unwrap(),
+        "myapp",
+    )
+    .await;
+
+    let mongodb = CancerCell::new(mongo_client);
     tokio::spawn(async move {
         let interval = tokio::time::interval(Duration::from_secs(CLEAN_TASK_TICK));
         cache_clone.clean_task(interval).await;
@@ -71,7 +79,8 @@ async fn main() {
         .layer(Extension(cache))
         .layer(Extension(lru_cache.get_ptr()))
         .layer(Extension(redis_master.get_ptr()))
-        .layer(Extension(redis_slave.get_ptr()));
+        .layer(Extension(redis_slave.get_ptr()))
+        .layer(Extension(mongodb.get_ptr()));
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
     let serve = axum::Server::bind(&addr)
         .serve(app.into_make_service())

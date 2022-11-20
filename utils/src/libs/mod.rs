@@ -5,6 +5,7 @@ pub mod extract;
 pub mod global;
 pub mod jwt;
 pub mod lru_k;
+pub mod mongo;
 pub mod rc;
 pub mod redis;
 pub mod response;

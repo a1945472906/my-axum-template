@@ -26,6 +26,10 @@ services:
     command: redis-server --slaveof master 6379
     ports:
       - "6380:6379"
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
   # opentelemetry:
   #   image: jaegertracing/all-in-one:latest
   #   ports:

@@ -1,6 +1,14 @@
 use super::model::{req::*, res::*};
 use utils::libs::{
     lru_k::LRUKCache,
+    mongo::{
+        mongo_mark,
+        mongodb::{
+            bson::{doc, Document},
+            options::{FindOneOptions, FindOptions},
+        },
+        MongoDB,
+    },
     rc::Ptr,
     redis::{
         redis_mark::{Master, Slave},
@@ -55,5 +63,36 @@ pub async fn redis_put(
     match conn.set(&req.key, &req.value) {
         Ok(()) => Ok(()),
         Err(e) => Err(Meta::from(400, &e.to_string())),
+    }
+}
+
+// pub async fn test_mongodb() -> Result<> {
+
+// }
+
+pub async fn test_mongodb_insert(
+    req: PutMongoDBReq,
+    mongodb_conn: Ptr<MongoDB<mongo_mark::Master>>,
+) -> Result<(), Meta> {
+    let db = mongodb_conn.client.database("mydb");
+    let collection = db.collection::<PutMongoDBReq>("test");
+    match collection.insert_one(req, None).await {
+        Ok(_) => Ok(()),
+        Err(e) => Err(Meta::from(500, &e.to_string())),
+    }
+}
+
+pub async fn test_mongodb_find(
+    req: FindMongoDBReq,
+    mongodb_conn: Ptr<MongoDB<mongo_mark::Master>>,
+) -> Result<FindMongoDBRes, Meta> {
+    let db = mongodb_conn.client.database("mydb");
+    let collection = db.collection::<FindMongoDBRes>("test");
+    // let find_options = FindOneOptions::builder().sort(doc! {}).build();
+    let mut cursor = collection.find_one(doc! {"key": &req.key}, None).await;
+    match cursor {
+        Ok(Some(result)) => Ok(result),
+        Err(e) => Err(Meta::from(400, &e.to_string())),
+        _ => Err(Meta::from(400, "no result")),
     }
 }
