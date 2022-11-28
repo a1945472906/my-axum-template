@@ -26,7 +26,7 @@ pub fn decode_login_key(key: String) -> String {
 
 pub async fn login(
     req: req::Login,
-    db: DB<User>,
+    db: &DB<User>,
     mut cache: RefreshTokenCache,
 ) -> Result<resp::LoginInfo, Meta> {
     let result: Result<Value, _> = sqlx::query_scalar(
@@ -123,7 +123,7 @@ pub async fn refresh_token(
 pub async fn add_role(
     user_info: Token<model::UserInfo>,
     req: req::AddRole,
-    db: DB<User>,
+    db: &DB<User>,
 ) -> Result<(), Meta> {
     if !user_info.is_admin() {
         return Err(Meta {
@@ -148,7 +148,7 @@ pub async fn add_role(
 pub async fn update_user_info(
     mut user_info: Token<model::UserInfo>,
     req: req::UpdateUserInfo,
-    db: DB<User>,
+    db: &DB<User>,
     mut cache: RefreshTokenCache,
 ) -> Result<resp::LoginInfo, Meta> {
     if req.sex.is_some() || req.realname.is_some() {
@@ -200,7 +200,7 @@ pub async fn update_user_info(
 
 pub async fn get_user(
     user_info: Token<model::UserInfo>,
-    db: DB<User>,
+    db: &DB<User>,
 ) -> Result<resp::GetUsers, Meta> {
     if !user_info.is_admin() {
         return Err(Meta::from(401, "权限不足"));
@@ -251,7 +251,7 @@ pub async fn get_user(
 
 pub async fn key_login(
     req: req::KeyLogin,
-    db: DB<User>,
+    db: &DB<User>,
     mut cache: RefreshTokenCache,
 ) -> Result<resp::LoginInfo, Meta> {
     let username = decode_login_key(req.key);

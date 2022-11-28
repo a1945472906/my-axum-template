@@ -1,37 +1,43 @@
 // use axum::Extension;
 use axum::{
-    extract::{Path, Query},
+    debug_handler,
+    extract::{Path, Query, State},
     response::IntoResponse,
     routing::*,
     Extension, Json,
 };
 use utils::libs::{
     db::{database::DB, model::db_mark::User},
+    extension::Cache,
     jwt::Token,
+    rc::Ptr,
     response::{Meta, Response},
 };
 
 use super::control::*;
 use super::model::{model::UserInfo, req::*};
 use crate::apps::View;
+use crate::AppState;
 use crate::RefreshTokenCache;
 pub struct UserView;
 
 impl UserView {
     async fn login(
+        State(_): State<AppState>,
+        State(db): State<Ptr<DB<User>>>,
+        State(cache): State<RefreshTokenCache>,
         Json(req): Json<Login>,
-        Extension(db): Extension<DB<User>>,
-        Extension(cache): Extension<RefreshTokenCache>,
     ) -> impl IntoResponse {
-        Response::from(login(req, db, cache).await)
+        // let db = &*db;
+        Response::from(login(req, &db, cache).await)
     }
 
     async fn key_login(
+        State(db): State<Ptr<DB<User>>>,
+        State(cache): State<RefreshTokenCache>,
         Query(req): Query<KeyLogin>,
-        Extension(db): Extension<DB<User>>,
-        Extension(cache): Extension<RefreshTokenCache>,
     ) -> impl IntoResponse {
-        Response::from(key_login(req, db, cache).await)
+        Response::from(key_login(req, &db, cache).await)
     }
 
     async fn get_user_info(user_info: Token<UserInfo>) -> impl IntoResponse {
@@ -42,18 +48,18 @@ impl UserView {
     }
 
     async fn refresh_token(
+        State(cache): State<RefreshTokenCache>,
         Json(req): Json<RefreshToken>,
-        Extension(cache): Extension<RefreshTokenCache>,
     ) -> impl IntoResponse {
         Response::from(refresh_token(req, cache).await)
     }
 
     async fn add_role(
         user_info: Token<UserInfo>,
+        State(db): State<Ptr<DB<User>>>,
         Json(req): Json<AddRole>,
-        Extension(db): Extension<DB<User>>,
     ) -> impl IntoResponse {
-        match add_role(user_info, req, db).await {
+        match add_role(user_info, req, &db).await {
             Ok(_) => Response {
                 meta: Meta::default(),
                 body: Some(()),
@@ -64,11 +70,11 @@ impl UserView {
 
     async fn update_user_info(
         user_info: Token<UserInfo>,
+        State(db): State<Ptr<DB<User>>>,
+        State(cache): State<RefreshTokenCache>,
         Json(req): Json<UpdateUserInfo>,
-        Extension(db): Extension<DB<User>>,
-        Extension(cache): Extension<RefreshTokenCache>,
     ) -> impl IntoResponse {
-        match update_user_info(user_info, req, db, cache).await {
+        match update_user_info(user_info, req, &db, cache).await {
             Ok(resp) => Response {
                 meta: Meta::default(),
                 body: Some(resp),
@@ -79,14 +85,14 @@ impl UserView {
 
     async fn get_user(
         user_info: Token<UserInfo>,
-        Extension(db): Extension<DB<User>>,
+        State(db): State<Ptr<DB<User>>>,
     ) -> impl IntoResponse {
-        Response::from(get_user(user_info, db).await)
+        Response::from(get_user(user_info, &db).await)
     }
 }
 
 impl View for UserView {
-    fn as_route() -> Router {
+    fn as_route() -> Router<AppState> {
         let app = Router::new()
             .route("/", get(Self::get_user))
             .route("/login", post(Self::login).get(Self::key_login))
@@ -94,6 +100,7 @@ impl View for UserView {
             .route("/user_info", get(Self::get_user_info))
             .route("/role", put(Self::add_role))
             .route("/update_user_info", put(Self::update_user_info));
+        // .with_state(state);
         Router::new().nest("/user", app)
     }
 }

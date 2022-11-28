@@ -21,11 +21,18 @@ pub trait Job {
     async fn execute(&self);
 }
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct Cache<K, V>(pub *mut HashMap<K, V>);
 
 unsafe impl<K, V> Send for Cache<K, V> {}
 unsafe impl<K, V> Sync for Cache<K, V> {}
+impl<K, V> Clone for Cache<K, V> {
+    #[inline]
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+impl<K, V> Copy for Cache<K, V> {}
 impl<K, V> Deref for Cache<K, V> {
     type Target = HashMap<K, V>;
     fn deref(&self) -> &Self::Target {

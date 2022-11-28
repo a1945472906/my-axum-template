@@ -1,4 +1,4 @@
-use crate::apps::View;
+use crate::{apps::View, AppState};
 use axum::{response::IntoResponse, routing::*, Json, Router};
 use std::collections::HashMap;
 use utils::libs::{
@@ -30,7 +30,7 @@ impl SystemView {
 }
 
 impl View for SystemView {
-    fn as_route() -> Router {
+    fn as_route() -> Router<AppState> {
         let app = Router::new().route("/env", get(Self::get_env).put(Self::set_env));
         Router::new().nest("/sys", app)
     }

@@ -1,4 +1,5 @@
 use super::model::{req::*, res::*};
+use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use utils::libs::{
     lru_k::LRUKCache,
     mongo::{
@@ -17,7 +18,6 @@ use utils::libs::{
     },
     response::{ErrCode, Meta},
 };
-
 pub async fn put_lru_2_cache(
     req: PutLru2CacheReq,
     mut cache: Ptr<LRUKCache<String, u8>>,
@@ -94,5 +94,44 @@ pub async fn test_mongodb_find(
         Ok(Some(result)) => Ok(result),
         Err(e) => Err(Meta::from(400, &e.to_string())),
         _ => Err(Meta::from(400, "no result")),
+    }
+}
+
+pub async fn ws_handle(mut socket: WebSocket) {
+    if let Some(msg) = socket.recv().await {
+        if let Ok(msg) = msg {
+            match msg {
+                Message::Text(t) => {
+                    println!("client sent str: {:?}", t);
+                }
+                Message::Binary(_) => {
+                    println!("client sent binary data");
+                }
+                Message::Ping(_) => {
+                    println!("socket ping");
+                }
+                Message::Pong(_) => {
+                    println!("socket pong");
+                }
+                Message::Close(_) => {
+                    println!("client disconnected");
+                    return;
+                }
+            }
+        } else {
+            println!("client disconnected");
+            return;
+        }
+    }
+    loop {
+        if socket
+            .send(Message::Text(String::from("Hi!")))
+            .await
+            .is_err()
+        {
+            println!("client disconnected");
+            return;
+        }
+        tokio::time::sleep(std::time::Duration::from_secs(3)).await;
     }
 }

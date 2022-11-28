@@ -5,6 +5,7 @@ use http::StatusCode;
 use serde::Serialize;
 
 #[allow(unused)]
+// #[derive(Clone)]
 pub enum ErrCode {
     Ok,
     BadRequest,

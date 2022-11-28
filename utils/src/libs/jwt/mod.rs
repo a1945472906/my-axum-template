@@ -2,17 +2,19 @@ use super::global::get_global_env;
 use super::rc::CancerCell;
 use super::response::{self, ErrCode, Meta};
 use crate::libs::extension::CacheValue;
+use async_trait::async_trait;
 use axum::{
-    async_trait,
-    extract::{FromRequest, RequestParts, TypedHeader},
+    extract::{FromRequestParts, TypedHeader},
+    RequestPartsExt,
 };
-
 use headers::{authorization::Bearer, Authorization};
+use http::request::Parts;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::ops::{Deref, DerefMut};
 use std::time::SystemTime;
+
 pub trait Exp {
     fn get_exp(&self) -> u64;
     fn set_exp(&mut self, exp: u64);
@@ -154,24 +156,26 @@ impl<T> DerefMut for Token<T> {
     }
 }
 
+// #[async_trait]
 #[async_trait]
-impl<B, T> FromRequest<B> for Token<T>
+impl<S, T> FromRequestParts<S> for Token<T>
 where
     for<'a> T: Deserialize<'a> + Serialize,
-    B: Send,
+    // B: Send,
+    S: Send + Sync,
 {
     type Rejection = response::Response<()>;
-    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
-        let TypedHeader(Authorization(bearer)) =
-            TypedHeader::<Authorization<Bearer>>::from_request(req)
-                .await
-                .map_err(|_| response::Response {
-                    meta: Meta {
-                        err_code: ErrCode::UnAuthorized,
-                        err_message: String::from("Invalid token"),
-                    },
-                    body: None,
-                })?;
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        let TypedHeader(Authorization(bearer)) = parts
+            .extract::<TypedHeader<Authorization<Bearer>>>()
+            .await
+            .map_err(|_| response::Response {
+                meta: Meta {
+                    err_code: ErrCode::UnAuthorized,
+                    err_message: String::from("Invalid token"),
+                },
+                body: None,
+            })?;
         let token_data =
             decode::<Token<T>>(bearer.token(), &KEY.get().decoding, &Validation::default())
                 .map_err(|_| response::Response {
@@ -191,7 +195,7 @@ where
 {
     match decode::<T>(&value, &KEY.get().decoding, &Validation::default()) {
         Ok(data) => Ok(data.claims),
-        Err(e) => {
+        Err(_) => {
             // println!({}, e.to_string());
             Err(())
         }

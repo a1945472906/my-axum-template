@@ -1,7 +1,7 @@
 pub mod req {
     use serde::{Deserialize, Serialize};
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Deserialize)]
     pub struct PutLru2CacheReq {
         pub key: String,
         pub value: u8,
@@ -22,7 +22,7 @@ pub mod req {
         pub value: String,
     }
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Deserialize, Serialize, Clone)]
     pub struct PutMongoDBReq {
         pub key: String,
         pub value: String,
